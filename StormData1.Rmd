@@ -1,0 +1,62 @@
+---
+title: "US Storm Data Effects 1950-2011."
+author: "Gary W. Deinert"
+date: "Saturday, April 25, 2015"
+output: html_document
+---
+
+### Review of US weather events resulting in harmful health consequences to the population, or relatively severe economic consequences.
+
+```{r file-extract, cache=TRUE}
+library(ggplot2)
+library(reshape2)
+
+## fileloc is placement of file on local computer.  (Can be changed for your reproducibility.)
+filenm = "C:/Users/Gary/Desktop/Data Science Specialzation/Repr Research Peer Assignmt 2/repdata-data-StormData.csv.bz2"
+
+## Check if local file exists, otherwise download.  Mode = "wb" as binary zip file.  
+checkfile <- file.exists(filenm)         
+      if (checkfile == FALSE) download.file("https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2",filenm, mode = "wb")
+
+datafile <- read.csv(filenm)                          ## extract information from file
+names(datafile) <- tolower(names(datafile))           ## rid ourselves of pesky capital titles
+
+## injury and fatality data
+inj.data <- aggregate(datafile$injuries, by=list(datafile$evtype),sum)
+colnames(inj.data) <- c("event","injuries")
+highest.inj <- inj.data[order(inj.data$injuries,decreasing=TRUE),][1:10,]
+
+fatal.data <- aggregate(datafile$fatalities, by=list(datafile$evtype), sum)
+colnames(fatal.data) <- c("event","fatalities")
+highest.fatal <- fatal.data[order(fatal.data$fatalities,decreasing=TRUE),][1:10,]
+
+```
+### Top injuries and fatalities events 1950-2011
+
+```{r top-injuries-and-fatalities}
+
+par(mfrow=c(1,2))
+fillcols <- c("blue","red","green","orange","black","purple","cyan","brown","yellow","chartreuse")
+barplot(highest.inj$injuries,
+        horiz = TRUE,
+        xlab = "Injuries",
+        ylab = "Weather Event",
+        main = "Top 10 Human Injury Events",
+        col = fillcols)
+legend("topright",
+       legend = highest.inj$event,
+       fill = fillcols,
+       cex = 0.75)
+
+barplot(highest.fatal$fatalities,
+        horiz = TRUE,
+        xlab = "Fatalities",
+        ylab = "Weather Event",
+        main = "Top 10 Human Fatality Events",
+        col = fillcols)
+legend("topright",
+       legend = highest.fatal$event,
+       fill = fillcols,
+       cex = 0.75)
+```
+
