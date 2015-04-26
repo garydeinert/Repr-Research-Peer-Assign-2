@@ -7,20 +7,25 @@ output: html_document
 
 ### Review of US weather events resulting in harmful health consequences to the population, or relatively severe economic consequences.
 
-## -----------  Data Processing.  ----------
+## -----------  Loading Pre-processed Data.  ----------
 ***
 ```{r file-extract, cache=TRUE}
 library(ggplot2)
 library(reshape2)
 
-## fileloc is placement of file on local computer.  (Can be changed for your reproducibility.)
+## filenm is temp storage of file on local computer.  (Can be changed for your reproducibility.)
 filenm = "C:/Users/Gary/Desktop/Data Science Specialzation/Repr Research Peer Assignmt 2/repdata-data-StormData.csv.bz2"
 
 ## Check if local file exists, otherwise download.  Mode = "wb" as binary zip file.  
 checkfile <- file.exists(filenm)         
       if (checkfile == FALSE) download.file("https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2",filenm, mode = "wb")
 
-datafile <- read.csv(filenm)                    ## extract information from file
+datafile <- read.csv(filenm)              ## extract information from file and place unchanged in df
+
+```
+## -------------- Data Processing. ---------------------
+***
+```{r data-process, cache = TRUE}
 names(datafile) <- tolower(names(datafile))     ## rid ourselves of pesky all-caps titles
 
 ## injury and fatality data
@@ -33,21 +38,45 @@ colnames(fatal.data) <- c("event","fatalities")
 highest.fatal <- fatal.data[order(fatal.data$fatalities,decreasing=TRUE),][1:10,]
 
 ## property and crop damage data.  Convert K to 1000, M to 1000000, and B to 1000000000
+x <- datafile                      ## temporary, saves wait time in processing and typing
 
-datafile$propdmgexp <- as.factor(datafile$propdmgexp)
-datafile$propdmgexp <- factor(datafile$propdmgexp,levels = c(levels(datafile$propdmgexp),1,1000,1000000,1000000000))
-datafile$propdmgexp[datafile$propdmgexp==""] <- "1"
-datafile$propdmgexp[datafile$propdmgexp=="K"] <- "1000"
-datafile$propdmgexp[datafile$propdmgexp=="M"] <- "1000000"
-datafile$propdmgexp[datafile$propdmgexp=="B"] <- "1000000000"
+x$propdmgexp <- as.factor(x$propdmgexp)                     ## property damage exponent conversion
+x$propdmgexp <- factor(x$propdmgexp,levels = c(levels(x$propdmgexp),"1","1000","1000000","1000000000"))
+x$propdmgexp[x$propdmgexp==""] <- "1"
+x$propdmgexp[x$propdmgexp %in% c("K","k")] <- "1000"
+x$propdmgexp[x$propdmgexp %in% c("M","m")] <- "1000000"
+x$propdmgexp[x$propdmgexp %in% c("B","b")] <- "1000000000"
+chk <- x[!(x$propdmgexp %in% c("0","1","1000","1000000","1000000000")),]      ## look at error values
+x$propdmgexp[!(x$propdmgexp %in% c("0","1","1000","1000000","1000000000"))] <- "0"
 
+propdmgtot <- x$propdmg * as.numeric(as.character(x$propdmgexp))  ## create new total prop dmg var
+x <- cbind.data.frame(x,propdmgtot)
 
+propdmg.data <- aggregate(x$propdmgtot, by = list(x$evtype), sum)
+colnames(propdmg.data) <- c("event","propdmg")
+highest.propdmg <- propdmg.data[order(propdmg.data$propdmg,decreasing=TRUE),][1:10,]
+
+x$cropdmgexp <- as.factor(x$cropdmgexp)                     ## crop damage exponent conversion
+x$cropdmgexp <- factor(x$cropdmgexp,levels = c(levels(x$cropdmgexp),"1","1000","1000000","1000000000"))
+x$cropdmgexp[x$cropdmgexp==""] <- "1"
+x$cropdmgexp[x$cropdmgexp %in% c("K","k")] <- "1000"
+x$cropdmgexp[x$cropdmgexp %in% c("M","m")] <- "1000000"
+x$cropdmgexp[x$cropdmgexp %in% c("B","b")] <- "1000000000"
+chk2 <- x[!(x$cropdmgexp %in% c("0","1","1000","1000000","1000000000")),]      ## look at error values
+x$cropdmgexp[!(x$cropdmgexp %in% c("0","1","1000","1000000","1000000000"))] <- "0"
+
+cropdmgtot <- x$cropdmg * as.numeric(as.character(x$cropdmgexp))  ## create new total prop dmg var
+x <- cbind.data.frame(x,cropdmgtot)
+
+cropdmg.data <- aggregate(x$cropdmgtot, by = list(x$evtype), sum)
+colnames(cropdmg.data) <- c("event","cropdmg")
+highest.cropdmg <- cropdmg.data[order(cropdmg.data$cropdmg,decreasing=TRUE),][1:10,]
 ```
 ##  -----------  Results.  -------------------------------
 ***    
 ### Figure 1. Top injuries and fatalities events 1950-2011
 
-```{r top-injuries-and-fatalities}
+```{r present-results}
 
 par(mfrow=c(1,2))
 fillcols <- c("blue","red","green","orange","black","purple","cyan","brown","yellow","chartreuse")
@@ -56,6 +85,7 @@ barplot(highest.inj$injuries,
         xlab = "Injuries",
         ylab = "Weather Event",
         main = "Top 10 Weather Injury Events",
+        cex.main = 0.90,
         col = fillcols)
 legend("topright",
        legend = highest.inj$event,
@@ -67,10 +97,44 @@ barplot(highest.fatal$fatalities,
         xlab = "Fatalities",
         ylab = "Weather Event",
         main = "Top 10 Weather Fatality Events",
+        cex.main = 0.90,
         col = fillcols)
 legend("topright",
        legend = highest.fatal$event,
        fill = fillcols,
        cex = 0.75)
 ```
+***    
+### Figure 2. Top property damage and crop damage events 1950-2011
+
+```{r present-results-2}
+
+par(mfrow=c(1,2))
+fillcols <- c("blue","red","green","orange","black","purple","cyan","brown","yellow","chartreuse")
+barplot(highest.propdmg$propdmg,
+        horiz = TRUE,
+        xlab = "Property Damage",
+        ylab = "Weather Event",
+        main = "Top 10 Weather Property Damage Events",
+        cex.main = 0.90,
+        col = fillcols)
+legend("topright",
+       legend = highest.propdmg$event,
+       fill = fillcols,
+       cex = 0.75)
+
+barplot(highest.cropdmg$cropdmg,
+        horiz = TRUE,
+        xlab = "Crop Damage",
+        ylab = "Weather Event",
+        main = "Top 10 Weather Crop Damage Events",
+        cex.main = 0.90,
+        col = fillcols)
+legend("topright",
+       legend = highest.cropdmg$event,
+       fill = fillcols,
+       cex = 0.75)
+
+```
+
 
