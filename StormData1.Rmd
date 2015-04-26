@@ -6,14 +6,16 @@ output: html_document
 ---
 
 ### Review of US weather events resulting in harmful health consequences to the population, or relatively severe economic consequences.
+***
+##### Synopsis. For the total span of 1950-2011, tornadoes were by far the highest number of injuries and fatalities across the US.  Property damage was greatest caused by floods with over twice the second highest of hurricane/typhoon.  Crop damage was greatest due to drought, again over twice the second highest value of floods. 
+#####      Our results are based on simple summation of data for all years, by all weather events identified in the U.S. National Oceanic and Atmospheric Administration's (NOAA) storm database during that time period. We draw our conclusions by looking at the top 10 magnitude events during the period.
 
 ## -----------  Loading Pre-processed Data.  ----------
+##### We draw directly from the NOAA ".bz2" file listed as variable "filenm".  Caching of data is used only in the file-extract and the data-process chunks of R code.  
 ***
 ```{r file-extract, cache=TRUE}
-library(ggplot2)
-library(reshape2)
 
-## filenm is temp storage of file on local computer.  (Can be changed for your reproducibility.)
+## filenm is temp storage of file on local computer. (Can be changed to any local file to reproduce.)
 filenm = "C:/Users/Gary/Desktop/Data Science Specialzation/Repr Research Peer Assignmt 2/repdata-data-StormData.csv.bz2"
 
 ## Check if local file exists, otherwise download.  Mode = "wb" as binary zip file.  
@@ -24,6 +26,7 @@ datafile <- read.csv(filenm)              ## extract information from file and p
 
 ```
 ## -------------- Data Processing. ---------------------
+##### No real adjustment is made to the injury or fatality data other than aggregation and ordering by magnitude.  However, the property and crop damage estimates rely upon an exponent multiplier of "K","M", or "B" for thousands, millions, or billions.  Lower-case values were permitted, then the variable changed to the appropriate multiplier.  80 observations of property damage and 8 observations of crop damage are nullified (multiplied by zero) due to their exponent being some other unknown character.  The field is coerced to a factor variable, changed to the numeric equivalent, then multiplied by the original property damage or crop damage in preparation for aggregation by event.  
 ***
 ```{r data-process, cache = TRUE}
 names(datafile) <- tolower(names(datafile))     ## rid ourselves of pesky all-caps titles
@@ -73,9 +76,8 @@ colnames(cropdmg.data) <- c("event","cropdmg")
 highest.cropdmg <- cropdmg.data[order(cropdmg.data$cropdmg,decreasing=TRUE),][1:10,]
 ```
 ##  -----------  Results.  -------------------------------
-***    
-### Figure 1. Top injuries and fatalities events 1950-2011
-
+##### We have compiled the top 10 in each category of human impact (injury, fatality) and damage (property, crop) using the R aggregate command, by event.  
+***   
 ```{r present-results}
 
 par(mfrow=c(1,2))
@@ -104,8 +106,9 @@ legend("topright",
        fill = fillcols,
        cex = 0.75)
 ```
+       
+#### Figure 1. Top injuries and fatalities events 1950-2011
 ***    
-### Figure 2. Top property damage and crop damage events 1950-2011
 
 ```{r present-results-2}
 
@@ -136,5 +139,8 @@ legend("topright",
        cex = 0.75)
 
 ```
+    
+#### Figure 2. Top property damage and crop damage events 1950-2011
+***
 
 
