@@ -7,6 +7,8 @@ output: html_document
 
 ### Review of US weather events resulting in harmful health consequences to the population, or relatively severe economic consequences.
 
+## -----------  Data Processing.  ----------
+***
 ```{r file-extract, cache=TRUE}
 library(ggplot2)
 library(reshape2)
@@ -18,8 +20,8 @@ filenm = "C:/Users/Gary/Desktop/Data Science Specialzation/Repr Research Peer As
 checkfile <- file.exists(filenm)         
       if (checkfile == FALSE) download.file("https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2",filenm, mode = "wb")
 
-datafile <- read.csv(filenm)                          ## extract information from file
-names(datafile) <- tolower(names(datafile))           ## rid ourselves of pesky capital titles
+datafile <- read.csv(filenm)                    ## extract information from file
+names(datafile) <- tolower(names(datafile))     ## rid ourselves of pesky all-caps titles
 
 ## injury and fatality data
 inj.data <- aggregate(datafile$injuries, by=list(datafile$evtype),sum)
@@ -30,8 +32,20 @@ fatal.data <- aggregate(datafile$fatalities, by=list(datafile$evtype), sum)
 colnames(fatal.data) <- c("event","fatalities")
 highest.fatal <- fatal.data[order(fatal.data$fatalities,decreasing=TRUE),][1:10,]
 
+## property and crop damage data.  Convert K to 1000, M to 1000000, and B to 1000000000
+
+datafile$propdmgexp <- as.factor(datafile$propdmgexp)
+datafile$propdmgexp <- factor(datafile$propdmgexp,levels = c(levels(datafile$propdmgexp),1,1000,1000000,1000000000))
+datafile$propdmgexp[datafile$propdmgexp==""] <- "1"
+datafile$propdmgexp[datafile$propdmgexp=="K"] <- "1000"
+datafile$propdmgexp[datafile$propdmgexp=="M"] <- "1000000"
+datafile$propdmgexp[datafile$propdmgexp=="B"] <- "1000000000"
+
+
 ```
-### Top injuries and fatalities events 1950-2011
+##  -----------  Results.  -------------------------------
+***    
+### Figure 1. Top injuries and fatalities events 1950-2011
 
 ```{r top-injuries-and-fatalities}
 
@@ -41,7 +55,7 @@ barplot(highest.inj$injuries,
         horiz = TRUE,
         xlab = "Injuries",
         ylab = "Weather Event",
-        main = "Top 10 Human Injury Events",
+        main = "Top 10 Weather Injury Events",
         col = fillcols)
 legend("topright",
        legend = highest.inj$event,
@@ -52,7 +66,7 @@ barplot(highest.fatal$fatalities,
         horiz = TRUE,
         xlab = "Fatalities",
         ylab = "Weather Event",
-        main = "Top 10 Human Fatality Events",
+        main = "Top 10 Weather Fatality Events",
         col = fillcols)
 legend("topright",
        legend = highest.fatal$event,
